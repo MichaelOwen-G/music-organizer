@@ -21,7 +21,7 @@ def api_query():
 
         trial = 0
 
-        while trial < max_tries
+        while trial < max_tries:
             try:
                 album = Album(query)
                 albumDic['tracks']  = album.tracks
