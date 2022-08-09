@@ -39,11 +39,12 @@ class Artist(MySpotify):
         self.artist_name = artist_name
         super(Artist, self).__init__(**kwargs)
 
-        # get artist uri for id_ing the artist on the API
-        self.artist_uri = self.get_artist_uri(self.artist_name)
+        if artist_name != '':
+            # get artist uri for id_ing the artist on the API
+            self.artist_uri = self.get_artist_uri(self.artist_name)
 
-        self.artist_image = self.get_artist_image(
-            self.artist_name)  # get artist image url
+            self.artist_image = self.get_artist_image(
+                self.artist_name)  # get artist image url
 
     def get_artist_image(self, artist):
         results = self.sp.search(q='artist:' + artist, type='artist')
@@ -104,41 +105,39 @@ class Artist(MySpotify):
 
         results = self.sp.artist_albums(self.artist_uri, album_type='album')
 
-        albums = results['items']
+        self.albums = results['items']
 
         while results['next']:
             results = self.sp.next(results)
             albums.extend(results['items'])
 
-        for album in albums:
-            album_uri = album['uri']
+        return self.albums
 
-            if album['name'] not in all_albums:
-                tracks = self.get_album_tracks(album_uri)
-                all_albums[album['name']] = {
-                    'tracks': tracks, 'album_info': album}
+class Album(MySpotify):
+    def __init__(self, album_uri, **kwargs):
+        self.album_uri = album_uri
+        super(Album, self).__init__(**kwargs)
+        self.get_album()
+        self.get_album_popularity()
 
-        self.all_albums = all_albums
+    def get_album(self):
+        self.album = self.sp.album(self.album_uri)      
 
-        return self.all_albums
+        result_tracks = self.sp.album_tracks(self.album_uri)
 
-    def get_album_tracks(self, album_uri):
-        result_tracks = self.sp.album_tracks(album_uri)
-
-        return result_tracks['items']
+        self.tracks = result_tracks['items']
 
     def get_track_popularity(self, uri):
         track_res = self.sp.track(uri)
+        print(track_res['popularity'])
 
         return track_res['popularity']
 
-    def get_album_popularity(self, album):
+    def get_album_popularity(self):
         total_op = 0
 
-        all_tracks = len(album['tracks'])
-
-        for track in album['tracks']:
-            ind = album['tracks'].index(track)
+        for track in self.tracks:
+            ind = self.tracks.index(track)
 
             popularity = self.get_track_popularity(track['uri'])
 
@@ -146,12 +145,11 @@ class Artist(MySpotify):
 
             total_op += int(popularity)
 
-            self.all_albums[album['album_info']['name']]['tracks'][ind] = track
+            self.tracks[ind] = track
 
-        self.all_albums[album['album_info']['name']
-                        ]['popularity'] = total_op/all_tracks
+        self.popularity_album = total_op/len(self.tracks)
 
-        return self.all_albums[album['album_info']['name']]['popularity']
+        self.album['popularity'] = self.popularity_album
 
     def get_track_image(self, track):
         try:
@@ -179,3 +177,26 @@ def download(self, link, file_name, c_size=1024):
                 file.write(chunk)
                 downloaded_chunk += c_size
                 yield (downloaded_chunk / int(file_length)) * 100
+
+'''
+ elif action == 'trackpop':
+        trackInfo = {}
+        trial = 0
+
+        while trial < max_tries
+            try:
+                my_spotify_obj = MySpotify()                
+                track = my_spotify_obj.search_query(query)['tracks']['items'][0]
+
+                trackInfo['popularity']  = track['popularity']
+                trackInfo['album']       = track['album']['name'] if 'album' in track else ''
+                trackInfo['trackNumber'] = track['track_number'] if 'track_number' in track else ''
+                trackInfo['uri']         = track['uri']
+                trackInfo['previewUrl']  = track['preview_url']
+                trackInfo['url']         = track['href']
+                trackInfo['explicit']    = track['explicit']
+                trackInfo['isLocal']     = track['is_local']
+
+                return trackInfo
+
+'''
